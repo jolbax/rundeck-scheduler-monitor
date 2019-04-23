@@ -1,0 +1,19 @@
+{
+  "name": "rundeck-scheduled-jobs-monitoring",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^0.18.0",
+    "ejs": "^2.6.1",
+    "express": "^4.16.4",
+    "xml2js": "^0.4.19"
+  }
+}

@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+	<title>Rundeck scheduled jobs monitoring</title>
+	<link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
+	<style type="text/css">
+		.succeeded > span {
+			color: #fff;
+		    background-color: #5cb85c;
+		    border-color: #4cae4c;
+		    padding: 3px;
+    		border-radius: 3px;
+		}
+		.running > span {
+			color: #fff;
+		    background-color: #269abc;
+		    border-color: #1b6d85;
+		    padding: 3px;
+    		border-radius: 3px;
+		}
+		.aborted > span {
+			color: #fff;
+		    background-color: #d58512;
+		    border-color: #985f0d;
+		    padding: 3px;
+    		border-radius: 3px;
+		}
+		.failed > span {
+			color: #fff;
+		    background-color: #ac2925;
+		    border-color: #761c19;
+		    padding: 3px;
+    		border-radius: 3px;
+		}
+	</style>
+	<script type="text/javascript">
+		function changeProject() {
+			var oldurl = window.location.href;
+			var newProject = document.getElementsByTagName('select')[0].value;
+			window.location.href = oldurl.replace(document.getElementById('selectedProject').value, newProject);
+		}
+	</script>
+</head>
+<body class="container">
+
+	<h3>Rundeck scheduled jobs monitoring page</h3>
+	<br/>
+
+	<div class="row">
+		<div class="col-md-6">
+			<select title="Rundeck project" onchange="changeProject()">
+				<%
+					for ( var i = 0; i < projects.length; i++ )
+					{
+					    var selected = ( projects[i].name == selectedProject ) ? "selected" : "";
+					    %><option value="<%=projects[i].name %>" <%=selected %>><%= projects[i].name %></option><%
+					}
+				%>
+			</select>	
+		</div>
+		<div class="col-md-6 text-right">
+			<button class="btn btn-primary" onclick="window.location.reload()">Refresh</button>
+		</div>
+	</div>
+	<input type="hidden" name="selectedProject" id="selectedProject" value="<%= selectedProject %>">
+	<% if(schedules.length > 0) { %>
+		<table class="table table-striped" style="padding-top: 5px">
+			<thead>
+				<tr>
+					<th>Status</th>
+					<th>Group</th>
+					<th>Name</th>
+					<th>Schedule</th>
+					<th>Last execution (UTC)</th>
+					<th>Next execution (UTC)</th>
+				</tr>
+			</thead>
+			<tbody>
+					<% schedules.forEach(function(schedule) { %>
+						<% if(schedule !== undefined) { %>
+							<tr>
+								<td class="<%= schedule.status %>">
+									<span><%= schedule.status %></span>
+								</td>
+								<td><%= schedule.group %></td>
+								<td title="<%= schedule.description %>"><a target="_blank" href="<%= schedule.permalink %>"><%= schedule.name %></a></td>
+								<td><%= schedule.schedule %></td>
+								<td><%= schedule.lastExecution %></td>
+								<td><%= schedule.nextScheduledExecution %></td>
+							</tr>
+			    		<% } %>
+		    		<% }); %>
+			</tbody>
+		</table>
+    <% } else { %>
+    	<p style="padding-top: 5px; font: italic;">No scheduled jobs for this project.</p>
+    <% } %>
+</body>
+</html>
