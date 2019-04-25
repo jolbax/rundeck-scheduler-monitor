@@ -4,10 +4,12 @@ const axios = require("axios");
 const https = require("https");
 const parseString = require("xml2js").parseString;
 const app = express();
+const moment = require('moment');
 
 const RUNDECK_ACCESS_TOKEN = process.env.RUNDECK_ACCESS_TOKEN
 const RUNDECK_API_BASE_URL = process.env.RUNDECK_API_BASE_URL
 const HTTP_PORT = process.env.HTTP_PORT
+const TIMEZONE = process.env.TIMEZONE
 
 const request = axios.create({
   httpsAgent: new https.Agent({ rejectUnauthorized: false })
@@ -78,12 +80,9 @@ app.get("/:projectName/show", (req, res) => {
           ])
             .then(pmResult => {
               if (pmResult[0].data !== undefined) {
-                scheduled.nextScheduledExecution = pmResult[0].data
-                  .nextScheduledExecution
-                  ? pmResult[0].data.nextScheduledExecution
-                      .replace("T", " ")
-                      .replace("Z", " ")
-                  : "";
+                scheduled.nextScheduledExecution = pmResult[0].data.nextScheduledExecution
+                    ? convertToDateWithTimezone(pmResult[0].data.nextScheduledExecution)
+                    : "";
               }
 
               if (pmResult[1].data !== undefined) {
@@ -111,13 +110,9 @@ app.get("/:projectName/show", (req, res) => {
                 const executionsInfo = pmResult[2].data;
                 if (executionsInfo !== undefined) {
                   scheduled.status = executionsInfo.executions[0].status;
-                  scheduled.lastExecution = executionsInfo.executions[0][
-                    "date-ended"
-                  ]["date"]
-                    ? executionsInfo.executions[0]["date-ended"]["date"]
-                        .replace("T", " ")
-                        .replace("Z", " ")
-                    : "";
+                  scheduled.lastExecution = executionsInfo.executions[0]['date-ended']['date']
+                      ? convertToDateWithTimezone(executionsInfo.executions[0]['date-ended']['date'])
+                      : "";
                 }
               }
               return scheduled;
@@ -143,6 +138,13 @@ app.get("/:projectName/show", (req, res) => {
       }
     });
 });
+
+function convertToDateWithTimezone(inputInUtc) {
+    if (TIMEZONE.startsWith("+")) {
+        return moment(inputInUtc, "YYYY-MM-DDTHH:mm:ssZ").utc().add(TIMEZONE.substring(1,2), 'hours').format("YYYY-MM-DD HH:mm:ss");
+    }
+    return moment(inputInUtc, "YYYY-MM-DDTHH:mm:ssZ").utc().subtract(TIMEZONE.substring(1,2), 'hours').format("YYYY-MM-DD HH:mm:ss");
+}
 
 function getDayScheduleExp(scheduledExp) {
   if (scheduledExp.weekday !== undefined) {
