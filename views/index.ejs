@@ -3,7 +3,10 @@
 <head>
     <meta charset="UTF-8">
 	<title>Rundeck scheduled jobs monitoring</title>
+
 	<link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
+	<link rel="stylesheet" href="//cdn.datatables.net/1.10.19/css/jquery.dataTables.min.css">
+
 	<style type="text/css">
 		.succeeded > span {
 			color: #fff;
@@ -34,7 +37,20 @@
     		border-radius: 3px;
 		}
 	</style>
-	<script type="text/javascript">
+
+
+	<script type="text/javascript" language="javascript" src="https://code.jquery.com/jquery-3.3.1.js" ></script>
+	<script type="text/javascript" language="javascript" src="https://cdn.datatables.net/1.10.19/js/jquery.dataTables.min.js" ></script>
+    <script type="text/javascript">
+		$(document).ready(function() {
+		    $('#table-job-data').DataTable( {
+		        "ordering": true,
+		        "paging":   false,
+		        "info":     false,
+		        "searching": false
+		    } );
+		} );
+
 		function changeProject() {
 			var oldurl = window.location.href;
 			var newProject = document.getElementsByTagName('select')[0].value;
@@ -65,15 +81,15 @@
 	</div>
 	<input type="hidden" name="selectedProject" id="selectedProject" value="<%= selectedProject %>">
 	<% if(schedules.length > 0) { %>
-		<table class="table table-striped" style="padding-top: 5px">
+		<table id="table-job-data" class="display table table-striped" style="padding-top: 5px">
 			<thead>
 				<tr>
 					<th>Status</th>
 					<th>Group</th>
 					<th>Name</th>
 					<th>Schedule</th>
-					<th>Last execution (UTC)</th>
-					<th>Next execution (UTC)</th>
+					<th>Last execution</th>
+					<th>Next execution</th>
 				</tr>
 			</thead>
 			<tbody>

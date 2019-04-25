@@ -2,6 +2,7 @@ const express = require('express');
 const axios = require('axios');
 const https = require('https');
 const parseString = require('xml2js').parseString;
+const moment = require('moment');
 const app = express();
 
 const config = require('./config/rundeck-api-config');
@@ -53,7 +54,7 @@ app.get('/:projectName/show', (req, res) => {
 								request.get(config.RUNDECK_API_BASE_URL + 'job/' + scheduled.id + '/executions?offset=0&max=1')])
 						.then((pmResult) => {
 							if (pmResult[0].data !== undefined) {
-								scheduled.nextScheduledExecution = pmResult[0].data.nextScheduledExecution ? pmResult[0].data.nextScheduledExecution.replace("T", " ").replace("Z", " ") : '';
+								scheduled.nextScheduledExecution = pmResult[0].data.nextScheduledExecution ? convertToDateWithTimezone(pmResult[0].data.nextScheduledExecution) : '';
 							}
 
 			            	if (pmResult[1].data !== undefined) {
@@ -73,7 +74,7 @@ app.get('/:projectName/show', (req, res) => {
 								const executionsInfo = pmResult[2].data;
 								if (executionsInfo !== undefined) {
 					            	scheduled.status = executionsInfo.executions[0].status;
-					            	scheduled.lastExecution = executionsInfo.executions[0]['date-ended']['date'] ? executionsInfo.executions[0]['date-ended']['date'].replace("T", " ").replace("Z", " ") : '';
+					            	scheduled.lastExecution = executionsInfo.executions[0]['date-ended']['date'] ? convertToDateWithTimezone(executionsInfo.executions[0]['date-ended']['date']) : '';
 				            	}
 							}
 			            	return scheduled;
@@ -97,6 +98,14 @@ app.get('/:projectName/show', (req, res) => {
 	        }
 		})
 })
+
+
+function convertToDateWithTimezone(inputInUtc) {
+	if (config.TIMEZONE.startsWith("+")) {
+		return moment(inputInUtc, "YYYY-MM-DDTHH:mm:ssZ").utc().add(config.TIMEZONE.substring(1,2), 'hours').format("YYYY-MM-DD HH:mm:ss"); 
+	}
+	return moment(inputInUtc, "YYYY-MM-DDTHH:mm:ssZ").utc().subtract(config.TIMEZONE.substring(1,2), 'hours').format("YYYY-MM-DD HH:mm:ss"); 
+}
 
 function getDayScheduleExp (scheduledExp) {
 	if (scheduledExp.weekday !== undefined) {
