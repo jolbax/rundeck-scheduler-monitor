@@ -4,20 +4,28 @@ const axios = require("axios");
 const https = require("https");
 const parseString = require("xml2js").parseString;
 const app = express();
-const moment = require('moment');
+const moment = require("moment");
+const logger = require("morgan");
 
-const RUNDECK_ACCESS_TOKEN = process.env.RUNDECK_ACCESS_TOKEN
-const RUNDECK_API_BASE_URL = process.env.RUNDECK_API_BASE_URL
-const HTTP_PORT = process.env.HTTP_PORT
-const TIMEZONE = process.env.TIMEZONE
+const RUNDECK_ACCESS_TOKEN = process.env.RUNDECK_ACCESS_TOKEN;
+const RUNDECK_API_BASE_URL = process.env.RUNDECK_API_BASE_URL;
+const HTTP_PORT = process.env.HTTP_PORT;
+const TIMEZONE = process.env.TIMEZONE;
+
+const LOG = process.env.LOG;
+
+if (LOG === "common") {
+  app.use(logger("common"));
+} else {
+  app.use(logger("dev"));
+}
 
 const request = axios.create({
   httpsAgent: new https.Agent({ rejectUnauthorized: false })
 });
 
 request.defaults.headers.common["Accept"] = "application/json";
-request.defaults.headers.common["X-Rundeck-Auth-Token"] =
-  RUNDECK_ACCESS_TOKEN;
+request.defaults.headers.common["X-Rundeck-Auth-Token"] = RUNDECK_ACCESS_TOKEN;
 
 app.set("views", "./views");
 app.set("view engine", "ejs");
@@ -52,8 +60,7 @@ app.get("/:projectName/show", (req, res) => {
   Promise.all([
     request.get(RUNDECK_API_BASE_URL + "projects"),
     request.get(
-      RUNDECK_API_BASE_URL +
-        `project/${projectName}/jobs?scheduledFilter=true`
+      RUNDECK_API_BASE_URL + `project/${projectName}/jobs?scheduledFilter=true`
     )
   ])
     .then(info => {
@@ -62,14 +69,9 @@ app.get("/:projectName/show", (req, res) => {
       if (info[1].status === 200) {
         scheduledJobs = info[1].data.map(scheduled => {
           return Promise.all([
+            request.get(RUNDECK_API_BASE_URL + "job/" + scheduled.id + "/info"),
             request.get(
-              RUNDECK_API_BASE_URL + "job/" + scheduled.id + "/info"
-            ),
-            request.get(
-              RUNDECK_API_BASE_URL +
-                "job/" +
-                scheduled.id +
-                "?format=xml"
+              RUNDECK_API_BASE_URL + "job/" + scheduled.id + "?format=xml"
             ),
             request.get(
               RUNDECK_API_BASE_URL +
@@ -80,9 +82,12 @@ app.get("/:projectName/show", (req, res) => {
           ])
             .then(pmResult => {
               if (pmResult[0].data !== undefined) {
-                scheduled.nextScheduledExecution = pmResult[0].data.nextScheduledExecution
-                    ? convertToDateWithTimezone(pmResult[0].data.nextScheduledExecution)
-                    : "";
+                scheduled.nextScheduledExecution = pmResult[0].data
+                  .nextScheduledExecution
+                  ? convertToDateWithTimezone(
+                      pmResult[0].data.nextScheduledExecution
+                    )
+                  : "";
               }
 
               if (pmResult[1].data !== undefined) {
@@ -110,9 +115,13 @@ app.get("/:projectName/show", (req, res) => {
                 const executionsInfo = pmResult[2].data;
                 if (executionsInfo !== undefined) {
                   scheduled.status = executionsInfo.executions[0].status;
-                  scheduled.lastExecution = executionsInfo.executions[0]['date-ended']['date']
-                      ? convertToDateWithTimezone(executionsInfo.executions[0]['date-ended']['date'])
-                      : "";
+                  scheduled.lastExecution = executionsInfo.executions[0][
+                    "date-ended"
+                  ]["date"]
+                    ? convertToDateWithTimezone(
+                        executionsInfo.executions[0]["date-ended"]["date"]
+                      )
+                    : "";
                 }
               }
               return scheduled;
@@ -140,10 +149,16 @@ app.get("/:projectName/show", (req, res) => {
 });
 
 function convertToDateWithTimezone(inputInUtc) {
-    if (TIMEZONE.startsWith("+")) {
-        return moment(inputInUtc, "YYYY-MM-DDTHH:mm:ssZ").utc().add(TIMEZONE.substring(1,2), 'hours').format("YYYY-MM-DD HH:mm:ss");
-    }
-    return moment(inputInUtc, "YYYY-MM-DDTHH:mm:ssZ").utc().subtract(TIMEZONE.substring(1,2), 'hours').format("YYYY-MM-DD HH:mm:ss");
+  if (TIMEZONE.startsWith("+")) {
+    return moment(inputInUtc, "YYYY-MM-DDTHH:mm:ssZ")
+      .utc()
+      .add(TIMEZONE.substring(1, 2), "hours")
+      .format("YYYY-MM-DD HH:mm:ss");
+  }
+  return moment(inputInUtc, "YYYY-MM-DDTHH:mm:ssZ")
+    .utc()
+    .subtract(TIMEZONE.substring(1, 2), "hours")
+    .format("YYYY-MM-DD HH:mm:ss");
 }
 
 function getDayScheduleExp(scheduledExp) {
