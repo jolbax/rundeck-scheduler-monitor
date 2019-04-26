@@ -4,9 +4,9 @@
 
 This is a simple web page to show Rundeck scheduled jobs data, such as job name, schedule, last execution, next execution.
 
-Data are fetched via Rundeck API
+Data are fetched via Rundeck API.
  
-
+This web page already be dockerized. 
 ### Libraries ###
 
 * NodeJS
@@ -14,19 +14,12 @@ Data are fetched via Rundeck API
 * Bootstrap
 
 ### Configuration file ###
-config/rundeck-api-config.js
+.env file:
 ```xml
-module.exports = {
-	HTTP_PORT: 5000,
-	RUNDECK_ACCESS_TOKEN: 'XXXXXXXXXXXXXXX',
-	RUNDECK_API_BASE_URL: 'http://127.0.0.1:8080/api/21/'
-}
-```
-
-### Build & start ###
-```xml
-npm install  // only run once
-npm start
+HTTP_PORT=5000
+RUNDECK_ACCESS_TOKEN='topsecret'
+RUNDECK_API_BASE_URL='https://127.0.0.1/api/21/'
+TIMEZONE='+2'
 ```
 
 ### References ###
